@@ -154,6 +154,9 @@ RnBiseqSet<-function(
 		msg<-c("Inconsistent values for sites and meth")
 		rnb.error(msg)
 	}
+	if(usebigff){
+		bff.finalizer <- rnb.getOption("disk.dump.bigff.finalizer")
+	}
 	
 	if(!is.null(rnb.getOption("identifiers.column"))){
 		sample.names<-pheno[[rnb.getOption("identifiers.column")]]
@@ -282,21 +285,24 @@ RnBiseqSet<-function(
 	}
 	
 	if(!is.null(covg)){
-		zero.covg.sites <- rowSums(covg[sites[,4L],,drop=FALSE], na.rm=TRUE)==0
+		if(verbose) rnb.status(c("Checking site coverage")) #TODO: debug info: remove me
+		zero.covg.sites <- rowSums(covg[sites[,4L],,drop=FALSE], na.rm=TRUE)==0 #TODO: could this be too memory wasteful?
 		if(verbose && any(zero.covg.sites)) {
 			rnb.status(c("Removed",length(intersect(which(zero.covg.sites), which(valid))),"of",
 							sum(valid),"methylation sites because they were not covered in any sample"))
 		}
 		valid<-which(valid | zero.covg.sites)
-		
+		rnb.cleanMem()
 		if(!useff){
 			covg[is.na(covg)]<-0L
 		}else{
+			# if(verbose) rnb.status(c("Setting zero coverages")) #TODO: debug info: remove me
 			for(ci in 1:ncol(covg)){
 				covg[is.na(covg[,ci]),ci]<-0L
 			}
 		}
 	}
+	rnb.cleanMem()
 	
 	sites <- sites[valid,]
 	if(!useff){
@@ -306,22 +312,31 @@ RnBiseqSet<-function(
 		}
 	}else{
 		meth.old <- meth
+		if(verbose) rnb.status(c("Creating methylation matrix")) #TODO: debug info: remove me
 		if (usebigff) {
-			meth <- BigFfMat(row.n=nrow(sites), col.n=ncol(meth.old), row.names=NULL, col.names=sample.names, finalizer="delete")
+			meth <- BigFfMat(row.n=nrow(sites), col.n=ncol(meth.old), row.names=NULL, col.names=sample.names, finalizer=bff.finalizer)
 		} else {
 			meth <- ff(NA, dim=c(nrow(sites), ncol(meth.old)), dimnames=list(NULL, sample.names), vmode="double")
 		}
-		meth[,] <- meth.old[which(legal.sites)[sites[,4L]],]
-		rm(meth.old); rnb.cleanMem()
+		# if(verbose) rnb.status(c("Filling methylation matrix")) #TODO: debug info: remove me
+		# meth[,] <- meth.old[which(legal.sites)[sites[,4L]],]
+		site.inds <- which(legal.sites)[sites[,4L]]
+		for (j in 1:ncol(meth.old)) meth[,j] <- meth.old[site.inds,j]
+		rm(meth.old)
+		rnb.cleanMem()
 		if(!is.null(covg)){
 			covg.old <- covg
+			if(verbose) rnb.status(c("Creating coverage matrix")) #TODO: debug info: remove me
 			if (usebigff) {
-				covg <- BigFfMat(row.n=nrow(sites), col.n=ncol(covg.old), row.names=NULL, col.names=sample.names, na.prototype=as.integer(NA), finalizer="delete")
+				covg <- BigFfMat(row.n=nrow(sites), col.n=ncol(covg.old), row.names=NULL, col.names=sample.names, na.prototype=as.integer(NA), finalizer=bff.finalizer)
 			} else {
 				covg <- ff(NA_integer_, dim=c(nrow(sites), ncol(covg.old)), dimnames=list(NULL, sample.names))
 			}
-			covg[,] <- covg.old[which(legal.sites)[sites[,4L]],]
-			rm(covg.old); rnb.cleanMem()
+			# if(verbose) rnb.status(c("Filling coverage matrix")) #TODO: debug info: remove me
+			# covg[,] <- covg.old[which(legal.sites)[sites[,4L]],]
+			for (j in 1:ncol(covg.old)) covg[,j] <- covg.old[site.inds,j]
+			rm(covg.old)
+			rnb.cleanMem()
 		}
 	}
 	sites <- sites[,-4L]
@@ -381,7 +396,7 @@ RnBiseqSet<-function(
 		
 		if("matrix" %in% class(meth)){
 			if (usebigff){
-				meth <- BigFfMat(meth, finalizer="delete")
+				meth <- BigFfMat(meth, finalizer=bff.finalizer)
 			} else {
 				meth <- convert.to.ff.matrix.tmp(meth)
 			}
@@ -390,7 +405,7 @@ RnBiseqSet<-function(
 		if(!is.null(covg)){
 			if("matrix" %in% class(covg)){
 				if (usebigff){
-					covg <- BigFfMat(covg, finalizer="delete")
+					covg <- BigFfMat(covg, finalizer=bff.finalizer)
 				} else {
 					covg <- convert.to.ff.matrix.tmp(covg)
 				}
@@ -399,6 +414,7 @@ RnBiseqSet<-function(
 		status <- list(disk.dump=TRUE, disk.dump.bigff=usebigff)
 	}
 
+	if(verbose) rnb.status(c("Creating object")) #TODO: debug info: remove me
 	object<-new("RnBiseqSet",
 			pheno=pheno,
 			sites=sites,

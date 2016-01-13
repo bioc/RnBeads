@@ -26,6 +26,7 @@ import.bed.columns	integer.vector	NULL	no	[1,	(chr=1,start=2,end=3,strand=6,meth
 import.bed.frame.shift	integer	no	no		1
 import.bed.test	logical	no	no		TRUE
 import.bed.test.only	logical	no	no		FALSE
+import.skip.object.check	logical	no	no		FALSE
 import.idat.chunk.size	integer	no	yes	(1,	NULL
 import.gender.prediction	logical	no	no		TRUE
 qc	logical	no	no		TRUE
@@ -91,6 +92,7 @@ covariate.adjustment.columns	integer.vector	no	yes		NULL
 differential.adjustment.sva	logical	no	no		TRUE
 differential.adjustment.celltype	logical	no	no		TRUE
 differential.enrichment	logical	no	no		FALSE
+differential.report.sites	logical	no	no		TRUE
 export.to.bed	logical	no	no		TRUE
 export.to.trackhub	character.vector	no	yes	(bigBed,bigWig)	(bigBed,bigWig)
 export.to.csv	logical	no	no		FALSE
@@ -104,5 +106,6 @@ logging.exit.on.error	logical	no	no		FALSE
 distribution.subsample	integer	no	no	[0,	1000000
 disk.dump.big.matrices	logical	no	no		TRUE
 disk.dump.bigff	logical	no	no		FALSE
+disk.dump.bigff.finalizer	character	no	no	(delete,close)	delete
 enforce.memory.management	logical	no	no		FALSE
 enforce.destroy.disk.dumps	logical	no	no		FALSE

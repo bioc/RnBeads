@@ -80,6 +80,23 @@ NULL
 .rnb.annotations <- new.env()
 
 ## Control probe types
+EPIC.CONTROL.TARGETS <- c(
+	"bisulfite conversion I" = "BISULFITE CONVERSION I",
+	"bisulfite conversion II" = "BISULFITE CONVERSION II",
+	"extension" = "EXTENSION",
+	"hybridization" = "HYBRIDIZATION",
+	"negative control" = "NEGATIVE",
+	"non-polymorphic" = "NON-POLYMORPHIC",
+	"norm A" = "NORM_A",
+	"norm C" = "NORM_C",
+	"norm G" = "NORM_G",
+	"norm T" = "NORM_T",
+	"restoration" = "RESTORATION",
+	"specificity I" = "SPECIFICITY I",
+	"specificity II" = "SPECIFICITY II",
+	"staining" = "STAINING",
+	"target removal" = "TARGET REMOVAL")
+
 HM450.CONTROL.TARGETS <- c(
 	"bisulfite conversion I" = "BISULFITE CONVERSION I",
 	"bisulfite conversion II" = "BISULFITE CONVERSION II",
@@ -97,34 +114,31 @@ HM450.CONTROL.TARGETS <- c(
 	"target removal" = "TARGET REMOVAL")
 
 HM27.CONTROL.TARGETS<-c(
-		"bisulfite conversion" = "Bisulfite conversion",
-		"extension" = "Extension",
-		"hybridization" = "Hybridization",
-		"negative control" = "Negative",
-		"SNP" = "Genotyping",
-		"non-polymorphic" = "Non-Polymorphic",
-		"norm Grn" = "Normalization-Green",
-		"norm Red" = "Normalization-Red",
-		"specificity" = "Specificity",
-		"staining" = "Staining",
-		"target removal" = "Target Removal",
-		"pACYC174" = "pACYC174",
-		"pUC19" = "pUC19",
-		"phiX174" = "phiX174"
-		)
+	"bisulfite conversion" = "Bisulfite conversion",
+	"extension" = "Extension",
+	"hybridization" = "Hybridization",
+	"negative control" = "Negative",
+	"SNP" = "Genotyping",
+	"non-polymorphic" = "Non-Polymorphic",
+	"norm Grn" = "Normalization-Green",
+	"norm Red" = "Normalization-Red",
+	"specificity" = "Specificity",
+	"staining" = "Staining",
+	"target removal" = "Target Removal",
+	"pACYC174" = "pACYC174",
+	"pUC19" = "pUC19",
+	"phiX174" = "phiX174")
 
 ## Sample-independent control probe types (subset of CONTROL.TARGETS)
 CONTROL.TARGETS.SAMPLE.INDEPENDENT <- c("STAINING", "HYBRIDIZATION", "TARGET REMOVAL", "EXTENSION")
 
 ## Genotyping probes on the 27k microarray
-
 HM27.CY3.SNP.PROBES<-c(
 		"rs798149",
 		"rs2959823",
 		"rs2235751",
 		"rs2125573",
-		"rs2804694"
-		)
+		"rs2804694")
 
 HM27.CY5.SNP.PROBES<-c(
 		"rs1941955",
@@ -137,8 +151,7 @@ HM27.CY5.SNP.PROBES<-c(
 		"rs10457834",
 		"rs6546473",
 		"rs5931272",
-		"rs264581"
-		)
+		"rs264581")
 
 ## F U N C T I O N S ###################################################################################################
 
@@ -1229,8 +1242,8 @@ rnb.get.chromosomes <- function(assembly = "hg19") {
 #' Extracts all control probe types in the HumanMethylation450 assay.
 #'
 #' @param target  A singleton of type \code{character}, specifying the microarray platform.
-#' 				  \code{"probes450"} and \code{"probes27"} correspond to HumanMethylation450
-#' 				 respectively HumanMethylation27 microarrays
+#' 				 \code{"probesEPIC"},\code{"probes450"} and \code{"probes27"} correspond to MethylationEPIC, 
+#' 				 HumanMethylation450, and HumanMethylation27 microarrays respectively.
 #'
 #' @return \code{character} vector of control targets.
 #'
@@ -1241,7 +1254,9 @@ rnb.get.chromosomes <- function(assembly = "hg19") {
 #' @author Pavlo Lutsik
 #' @export
 rnb.infinium.control.targets <- function(target="probes450") {
-	if(target=="probes450"){
+	if(target=="probesEPIC"){
+		return(EPIC.CONTROL.TARGETS)
+	}else if(target=="probes450"){
 		return(HM450.CONTROL.TARGETS)
 	}else if(target=="probes27"){
 		return(HM27.CONTROL.TARGETS)

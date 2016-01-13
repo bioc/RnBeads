@@ -9,8 +9,8 @@ Authors@R: c(
     role = c("aut")),
     person("Fabian", "Mueller", email = "rnbeads@mpi-inf.mpg.de",
     role = c("aut", "cre")))
-Date: 2015-10-03
-Version: 1.2.0
+Date: 2016-01-13
+Version: 1.2.1
 Suggests:
     Category,
     GEOquery,
@@ -112,3 +112,4 @@ Collate:
     'sva.R'
     'utilities.R'
     'wbcInference.R'
+RoxygenNote: 5.0.1
