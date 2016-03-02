@@ -648,8 +648,16 @@ read.idat.files <- function(base.dir,
 	idat.red.fnames<-idat.fnames[2*(1:nsamp)-1]
 	idat.grn.fnames<-idat.fnames[2*(1:nsamp)]
 
-	platform<-detect.infinium.platform(fn.base)
-
+	## Detect Infinium platform
+	platform<-rnb.detect.infinium.platform(idat.fnames)
+	if(verbose) {
+		txt <- c("probes27"="HumanMethylation27",
+			"probes450"="HumanMethylation450",
+			"probesEPIC"="MethylationEPIC")
+		rnb.info(paste("Detected platform:", txt[platform]))
+		rm(txt)
+	}
+	
 	annot<-rnb.annotation2data.frame(rnb.get.annotation(platform))
 	annot.ctrls<-rnb.get.annotation(gsub("probes","controls",platform))
 	nprobes<-sum(rnb.annotation.size(platform))
@@ -1615,33 +1623,44 @@ get.bed.column.classes<-function(bed.top,
 	names(classes)<-NULL
 	return(classes)
 }
-########################################################################################################################
-##
-##	detect.infinium.platform
-##
-##	Tries to infer the version of the Infinium platform based on the names of IDAT files
-##
-##	@author Pavlo Lutsik
-##
-detect.infinium.platform<-function(barcodes){
 
-	plate_id<-as.numeric(strsplit(barcodes[1], split="_")[[1]][1])
-	if(plate_id>200000000000){# EPIC platform
-		return("probesEPIC")
-	}else{
-			
-		inf27k.idats.present<-any(grepl("_[ABCDEFGHIJKL]$", barcodes))
-		inf450k.idats.present<-any(grepl("_R0[1-6]C0[1-2]$", barcodes))
-	
-		if(inf27k.idats.present) {
-			if (inf450k.idats.present) {
-				rnb.error("Undefined platform; both 450k and 27k IDATs are present")
-			}
-			return("probes27")
-		} else if (inf450k.idats.present) {
+########################################################################################################################
+
+#' rnb.detect.infinium.platform
+#'
+#' Attempts to infer the version of the Infinium platform based on the names and/or sizes of the IDAT files.
+#'
+#' @param idat.fnames Full names of the IDAT files comprising the dataset of interest.
+#' @return One of \code{"probes27"}, \code{"probes450"} or \code{"probes450"}.
+#
+#' @author Pavlo Lutsik
+#' @noRd
+rnb.detect.infinium.platform <- function(idat.fnames){
+
+	inf27k.idats.present <- any(grepl("_[ABCDEFGHIJKL]_", idat.fnames))
+	inf450kEPIC.idats.present <- any(grepl("_R0[1-6]C0[1-2]_", idat.fnames))
+
+	if (inf27k.idats.present) {
+		if (inf450kEPIC.idats.present) {
+			rnb.error("Undefined platform; detected HumanMethylation27 and HumanMethylation450")
+		}
+		return("probes27")
+	}
+	if (inf450kEPIC.idats.present) {
+		
+		file.sizes <- as.numeric(na.omit(file.info(idat.fnames)[, "size"]))
+		if (length(file.sizes) == 0) {
+			rnb.error("Undefined platform; cannot read the specified IDAT files")
+		}
+		if (all(file.sizes>10000000)) {
+			return("probesEPIC")
+		}
+		if (all(file.sizes<10000000)) {
 			return("probes450")
 		}
+		rnb.error("Undefined platform; detected HumanMethylation450 and MethylationEPIC")
 	}
-	rnb.error("Undefined platform; please check Sentrix ID and Sentrix Position columns in the sample sheet")
+	rnb.error("Undefined platform; unexpected or missing IDAT files")
 }
+
 ########################################################################################################################
