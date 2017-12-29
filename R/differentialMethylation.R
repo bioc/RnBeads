@@ -422,8 +422,9 @@ computeDiffTab.default.site <- function(X,inds.g1,inds.g2,
 	  } else {
 	    p.vals.var.adj <- rep(NA,length(p.vals.var))
 	  }
-	  var.g1 <- apply(X[,inds.g1],1,var)
-	  var.g2 <- apply(X[,inds.g2],1,var)
+	  
+	  var.g1 <- apply(tab.g1,1,var)
+	  var.g2 <- apply(tab.g2,1,var)
 	  
 	  if(paired){
 	    var.diff <- apply(tab.g1 - tab.g2,1,var)
@@ -2565,12 +2566,12 @@ rnb.section.diffMeth.region <- function(rnbSet,diffmeth,report,dm.go.enrich=NULL
   				    
   				    
   				    figName <- paste("lolaBoxVar_", kk, sep="")
-  				    pp <- lolaBoxPlotPerTarget(lolaDb, dmTab, scoreCol="logOddsRatio", orderCol="maxRnk", pvalCut=0.01, colorpanel=targetColors, maxTerms=100)
+  				    pp <- lolaBoxPlotPerTarget(lolaDb, dmTab, scoreCol="oddsRatio", orderCol="maxRnk", pvalCut=0.01, colorpanel=targetColors, maxTerms=100)
   				    rPlot <- createReportGgPlot(pp, figName, report, create.pdf=TRUE, width=20, height=5)
   				    lolaBoxPlots.var[[kk]] <- suppressMessages(off(rPlot, handle.errors=TRUE))
   				    
   				    figName <- paste("lolaBarVar_", kk, sep="")
-  				    pp <- lolaBarPlot(lolaDb, dmTab, scoreCol="logOddsRatio", orderCol="maxRnk", pvalCut=0.01, colorpanel=targetColors, maxTerms=100)
+  				    pp <- lolaBarPlot(lolaDb, dmTab, scoreCol="oddsRatio", orderCol="maxRnk", pvalCut=0.01, colorpanel=targetColors, maxTerms=100)
   				    rPlot <- createReportGgPlot(pp, figName, report, create.pdf=TRUE, width=20, height=5)
   				    lolaBarPlots.var[[kk]] <- off(rPlot, handle.errors=TRUE)
   				  }

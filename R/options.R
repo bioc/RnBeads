@@ -131,6 +131,39 @@ rm(parse.default, parse.options)
 
 ########################################################################################################################
 
+## rnb.option.compatibility
+##
+## Check an option name and value and ensure backwards compatibility
+##
+## @return The (possibly modified) option name and value in a structured list with names oname, ovalue and modified
+## @author Fabian Mueller
+rnb.option.compatibility <- function(oname, ovalue) {
+	noEffectOptions <- c("noeffect")
+	res <- list(oname=oname, ovalue=ovalue, modified=FALSE)
+	isCharValue <- is.character(ovalue) && length(ovalue)==1
+	if (oname == "differential.enrichment"){
+		oldValid <- is.logical(ovalue) || isCharValue
+		if (oldValid){
+			msg <- paste0("The option '", "differential.enrichment", "' no longer exists. Note, that RnBeads now supports GO and LOLA enrichment. Your option setting will be applied to the new option '", "differential.enrichment.go", "'")
+			logger.warning(msg)
+			res[["oname"]] <- "differential.enrichment.go"
+			if (isCharValue){
+				ov <- as.logical(ovalue)
+				res[["ovalue"]] <- ov
+			}
+			res[["modified"]] <- TRUE
+		}
+	} else if (is.element(oname, noEffectOptions)){
+		msg <- paste0("The option '", oname, "' no longer exists. It will not have an effect on the current analysis")
+		logger.warning(msg)
+		res["oname"] <- list(NULL)
+		res[["modified"]] <- TRUE
+	}
+	return(res)
+}
+
+########################################################################################################################
+
 ## rnb.validate.option
 ##
 ## Validates the provided values for an option is acceptable, and converts it if necessary.
@@ -139,6 +172,12 @@ rm(parse.default, parse.options)
 ## @author Yassen Assenov
 rnb.validate.option <- function(oname, ovalue) {
 	infos <- .rnb.options[["infos"]]
+	# ensure backwards compatibility for legacy options
+	ocompat <- rnb.option.compatibility(oname, ovalue)
+	oname   <- ocompat$oname
+	ovalue  <- ocompat$ovalue
+	if (is.null(oname) && ocompat$modified) return(NULL)
+
 	if (!(oname %in% rownames(infos))) {
 		stop(paste(oname, "is invalid option"))
 	}
@@ -311,6 +350,12 @@ rnb.validate.option <- function(oname, ovalue) {
 ## @return Empty \code{character} string if the operation was successful; the text of an error message otherwise.
 ## @author Yassen Assenov
 rnb.get.option <- function(oname, ovalue = NULL, setvalue = FALSE) {
+	# ensure backwards compatibility for legacy options
+	ocompat <- rnb.option.compatibility(oname, ovalue)
+	oname   <- ocompat$oname
+	ovalue  <- ocompat$ovalue
+	if (is.null(oname) && ocompat$modified) return("")
+
 	if (!(oname %in% names(.rnb.options[["current"]]))) {
 		return(paste(oname, "is invalid option"))
 	}
@@ -468,7 +513,7 @@ rnb.is.option <- function(txt) {
 #'        See \pkg{RnBeads} vignette and the FAQ section on the website for more details.}
 #'   \item{\bold{\code{import.bed.test.only}}\code{ = FALSE}}{
 #' 		  Perform only the small loading test, and skip loading all the data.}
-#'   \item{\bold{\code{import.skip.object.check}}\code{ =  FALSE}}{
+#'   \item{\bold{\code{import.skip.object.check}}\code{ = FALSE}}{
 #'		  Skip the check of the loaded RnBSet object after loading. Helps with keeping the memory profile down}
 #'   \item{\bold{\code{import.gender.prediction}}\code{ = TRUE}}{
 #'        Flag indicating if gender prediction is to be performed. Gender prediction is supported for Infinium 450k, EPIC
@@ -629,7 +674,10 @@ rnb.is.option <- function(txt) {
 #'   \item{\bold{\code{inference.age.prediction.cv}}\code{ = FALSE}}{
 #'        Flag indicating if predictive power of a predictor that was trained in that run of the age prediction should
 #'		be assessed by cross-validation. This option only has an influence if 
-#'		\code{inference.age.prediction.training}\code{ = TRUE}}.
+#'		\code{inference.age.prediction.training}\code{ = TRUE}.}
+#'   \item{\bold{\code{inference.immune.cells}}\code{ = TRUE}}{
+#'        Flag indicating if immune cell content estimation is to be performed. Immune cell content prediction is based
+#'        on the LUMP algorithm and is currently supported for the hg19 assembly only.}
 #'   \item{\bold{\code{exploratory}}\code{ = TRUE}}{
 #'        Flag indicating if the exploratory analysis module is to be executed.}
 #'   \item{\bold{\code{exploratory.columns}}\code{ = NULL}}{
@@ -958,4 +1006,74 @@ rnb.performance.profile<-function(data.type = "450k", profile) {
 
 	fname <- system.file(paste0("extdata/optionProfiles/", data.type, "_", profile, ".xml"), package="RnBeads")
 	invisible(rnb.xml2options(fname))
+}
+
+########################################################################################################################
+
+#' rnb.options.description.table.fromRd
+#'
+#' Parses the Rd file containing rnb.options descriptions and creates an option description table
+#'
+#' @param rdFile File path of the Rd file (rnb.options.Rd)
+#' @return A data frame containing option names, descriptions and default settings. row names correspond to option names
+#' @examples
+#' \donttest{
+#' optTab <- rnb.options.description.table.fromRd(file.path("man", "rnb.options.Rd"))
+#' tabFile <- file.path("inst", "extdata", "option_desc.tsv")
+#' write.table(optTab, tabFile, sep="\t", quote=FALSE, row.names=FALSE)
+#' }
+#' @author Fabian Mueller
+#' @noRd
+rnb.options.description.table.fromRd <- function(rdFile=file.path("man", "rnb.options.Rd")){
+	rnb.require("tools")
+	rnb.require("XML")
+	htmlfn <- tempfile(fileext=".html")
+	Rd2HTML(rdFile, out=htmlfn, package="RnBeads")
+	tt <- XML::xmlRoot(XML::xmlTreeParse(htmlfn))[["body"]]
+	# get the subheadings
+	tt.h3 <- names(tt)=="h3"
+	tt.h3.which <- which(tt.h3)
+	#option description part:
+	headings <- rep(NA, length(tt.h3))
+	headings[tt.h3] <- sapply(tt[tt.h3], xmlValue)
+	ind.desc.start <- which(headings=="Options used in RnBeads")+1 #next element after h3 heading
+	ind.desc.end <- tt.h3.which[tt.h3.which>ind.desc.start][1] - 1 #element before next h3 heading
+	dd <- tt[ind.desc.start:ind.desc.end]
+	dd <- dd[names(dd)=="dl"] # only take description list elements
+	optionDf <- NULL
+	for (x in dd){
+		#check structure of dl element (should be alternating dt and dd)
+		if (!all(names(x)==rep(c("dt", "dd"), length.out=length(x)))) stop("Invalid structure of dl element")
+		optTitles  <- sapply(x[names(x)=="dt"], xmlValue)
+		optDescs   <- gsub("(\\t|\\n)", " ", sapply(x[names(x)=="dd"], xmlValue))
+		optNames   <- sapply(strsplit(optTitles, split="="), FUN=function(x){trimws(x[1])})
+		optDefault <- sapply(strsplit(optTitles, split="="), FUN=function(x){trimws(x[2])})
+		optionDf <- rbind(optionDf, data.frame(
+			name=optNames,
+			desc=optDescs,
+			default=optDefault,
+			stringsAsFactors=FALSE
+		))
+	}
+	rownames(optionDf) <- optionDf$name
+	return(optionDf)
+}
+
+#' rnb.options.description.table.fromRd
+#'
+#' Returns a description table of RnBeads options
+#'
+#' @return A data frame containing option names, descriptions and default settings. row names correspond to option names
+#' @examples
+#' \donttest{
+#' optTab <- rnb.options.description.table()
+#' str(optTab)
+#' }
+#' @author Fabian Mueller
+#' @noRd
+rnb.options.description.table <- function(){
+	optDescFn <- system.file(file.path("extdata", "option_desc.tsv"), package="RnBeads")
+	optionDf <- read.table(optDescFn, sep="\t", header=TRUE, stringsAsFactors=FALSE, colClasses="character", na.strings="", quote="")
+	rownames(optionDf) <- optionDf$name
+	return(optionDf)
 }
