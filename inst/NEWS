@@ -1,4 +1,9 @@
-RnBeads 1.11.4/1.10.4
+RnBeads 1.11.5
+=============
+ 
+ * bugfixes (loading, imputation)
+
+RnBeads 1.11.4
 =============
  
  * Introducing RnBeadsDJ, a shiny-based interface for running RnBeads analyses and modules (run with rnb.run.dj())
