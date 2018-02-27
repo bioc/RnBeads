@@ -1,4 +1,10 @@
-RnBeads 1.10.7 / 1.11.7
+RnBeads 1.10.8 / 1.11.8
+=============
+ 
+ * Fixes for bioconductor warnings (combine, etc.)
+ * docoupled missing value imputation from differential methylation
+
+RnBeads 1.11.7
 =============
  
  * enhanced cross-platform combination methods
