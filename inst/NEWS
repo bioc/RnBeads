@@ -1,3 +1,11 @@
+RnBeads 2.10.0
+=============
+
+ * Added MouseMethylationBeadChip support (beta)
+ * Reimplementation of basic dye bias correction and background subtraction methods for arrays
+ * Several new probe filtering utilities
+ * Minor bugfixes 
+
 RnBeads 2.9.3
 =============
 
